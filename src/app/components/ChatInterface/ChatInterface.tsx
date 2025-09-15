@@ -18,6 +18,7 @@ import { useChat } from "../../hooks/useChat";
 import styles from "./ChatInterface.module.scss";
 import { Message } from "@langchain/langgraph-sdk";
 import { extractStringFromMessageContent } from "../../utils/utils";
+import Image from "next/image";
 
 interface ChatInterfaceProps {
   threadId: string | null;
@@ -185,8 +186,8 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       <div className={styles.container}>
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <Bot className={styles.logo} />
-            <h1 className={styles.title}>Deep Agents</h1>
+            <Image src="/logo.webp" alt="DeepOpus Logo" width={40} height={40} />
+            <h1 className={styles.title}>DeepOpus - Copy Creator</h1>
           </div>
           <div className={styles.headerRight}>
             <Button
