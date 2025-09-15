@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, LoaderCircle, SquarePen, History, X } from "lucide-react";
+import { Send, Bot, LoaderCircle, SquarePen, History, X, SquarePlus } from "lucide-react";
 import { ChatMessage } from "../ChatMessage/ChatMessage";
 import { ThreadHistorySidebar } from "../ThreadHistorySidebar/ThreadHistorySidebar";
 import type { SubAgent, TodoItem, ToolCall } from "../../types/types";
@@ -196,7 +196,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
               onClick={handleNewThread}
               disabled={!hasMessages}
             >
-              <SquarePen size={20} />
+              <SquarePlus size={20} />
             </Button>
             <Button variant="ghost" size="icon" onClick={toggleThreadHistory}>
               <History size={20} />
@@ -214,7 +214,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
             {!hasMessages && !isLoading && !isLoadingThreadState && (
               <div className={styles.emptyState}>
                 <Bot size={48} className={styles.emptyIcon} />
-                <h2>Start a conversation or select a thread from history</h2>
+                <h2>Comece uma nova conversa ou selecione uma existente no histórico</h2>
               </div>
             )}
             {isLoadingThreadState && (
@@ -236,7 +236,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
               {isLoading && (
                 <div className={styles.loadingMessage}>
                   <LoaderCircle className={styles.spinner} />
-                  <span>Working...</span>
+                  <span>Pensando...</span>
                 </div>
               )}
               <div ref={messagesEndRef} />
