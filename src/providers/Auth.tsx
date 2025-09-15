@@ -10,6 +10,7 @@ import {
 
 interface AuthSession {
   accessToken: string;
+  
 }
 
 interface AuthContextType {

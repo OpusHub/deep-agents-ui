@@ -95,8 +95,8 @@ export const TasksFilesSidebar = React.memo<TasksFilesSidebarProps>(
                   {groupedTodos.in_progress.length > 0 && (
                     <div className={styles.todoGroup}>
                       <h3 className={styles.groupTitle}>In Progress</h3>
-                      {groupedTodos.in_progress.map((todo, index) => (
-                        <div key={`in_progress_${todo.id}_${index}`} className={styles.todoItem}>
+                      {groupedTodos.in_progress.map((todo) => (
+                        <div key={`in_progress_${todo.id || todo.content}`} className={styles.todoItem}>
                           {getStatusIcon(todo.status)}
                           <span className={styles.todoContent}>
                             {todo.content}
@@ -109,8 +109,8 @@ export const TasksFilesSidebar = React.memo<TasksFilesSidebarProps>(
                   {groupedTodos.pending.length > 0 && (
                     <div className={styles.todoGroup}>
                       <h3 className={styles.groupTitle}>Pending</h3>
-                      {groupedTodos.pending.map((todo, index) => (
-                        <div key={`pending_${todo.id}_${index}`} className={styles.todoItem}>
+                      {groupedTodos.pending.map((todo) => (
+                        <div key={`pending_${todo.id || todo.content}`} className={styles.todoItem}>
                           {getStatusIcon(todo.status)}
                           <span className={styles.todoContent}>
                             {todo.content}
@@ -123,8 +123,8 @@ export const TasksFilesSidebar = React.memo<TasksFilesSidebarProps>(
                   {groupedTodos.completed.length > 0 && (
                     <div className={styles.todoGroup}>
                       <h3 className={styles.groupTitle}>Completed</h3>
-                      {groupedTodos.completed.map((todo, index) => (
-                        <div key={`completed_${todo.id}_${index}`} className={styles.todoItem}>
+                      {groupedTodos.completed.map((todo) => (
+                        <div key={`completed_${todo.id || todo.content}`} className={styles.todoItem}>
                           {getStatusIcon(todo.status)}
                           <span className={styles.todoContent}>
                             {todo.content}

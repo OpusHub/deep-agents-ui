@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import { type Message } from "@langchain/langgraph-sdk";
 import { getDeployment } from "@/lib/environment/deployments";
@@ -25,6 +25,35 @@ export function useChat(
   const { session } = useAuthContext();
   const accessToken = session?.accessToken;
 
+  // Use refs to avoid recreating callbacks when dependencies change
+  const onTodosUpdateRef = useRef(onTodosUpdate);
+  const onFilesUpdateRef = useRef(onFilesUpdate);
+  const todosTimeoutRef = useRef<NodeJS.Timeout>();
+  const filesTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Update refs when callbacks change
+  onTodosUpdateRef.current = onTodosUpdate;
+  onFilesUpdateRef.current = onFilesUpdate;
+
+  // Debounced update functions
+  const debouncedTodosUpdate = useCallback((todos: TodoItem[]) => {
+    if (todosTimeoutRef.current) {
+      clearTimeout(todosTimeoutRef.current);
+    }
+    todosTimeoutRef.current = setTimeout(() => {
+      onTodosUpdateRef.current(todos);
+    }, 100); // 100ms debounce
+  }, []);
+
+  const debouncedFilesUpdate = useCallback((files: Record<string, string>) => {
+    if (filesTimeoutRef.current) {
+      clearTimeout(filesTimeoutRef.current);
+    }
+    filesTimeoutRef.current = setTimeout(() => {
+      onFilesUpdateRef.current(files);
+    }, 100); // 100ms debounce
+  }, []);
+
   const agentId = useMemo(() => {
     if (!deployment?.agentId) {
       throw new Error(`No agent ID configured in environment`);
@@ -34,16 +63,36 @@ export function useChat(
 
   const handleUpdateEvent = useCallback(
     (data: { [node: string]: Partial<StateType> }) => {
-      Object.entries(data).forEach(([_, nodeData]) => {
-        if (nodeData?.todos) {
-          onTodosUpdate(nodeData.todos);
-        }
-        if (nodeData?.files) {
-          onFilesUpdate(nodeData.files);
-        }
-      });
+      try {
+        console.log("Received update event:", data);
+        Object.entries(data).forEach(([nodeName, nodeData]) => {
+          console.log(`Processing node ${nodeName}:`, nodeData);
+          if (nodeData?.todos) {
+            console.log("Updating todos:", nodeData.todos);
+            // Persist to localStorage as fallback
+            try {
+              localStorage.setItem(`thread_${threadId}_todos`, JSON.stringify(nodeData.todos));
+            } catch (e) {
+              console.warn("Failed to save todos to localStorage:", e);
+            }
+            debouncedTodosUpdate(nodeData.todos);
+          }
+          if (nodeData?.files) {
+            console.log("Updating files:", Object.keys(nodeData.files));
+            // Persist to localStorage as fallback
+            try {
+              localStorage.setItem(`thread_${threadId}_files`, JSON.stringify(nodeData.files));
+            } catch (e) {
+              console.warn("Failed to save files to localStorage:", e);
+            }
+            debouncedFilesUpdate(nodeData.files);
+          }
+        });
+      } catch (error) {
+        console.error("Error processing update event:", error);
+      }
     },
-    [onTodosUpdate, onFilesUpdate],
+    [threadId, debouncedTodosUpdate, debouncedFilesUpdate],
   );
 
   const stream = useStream<StateType>({
@@ -53,6 +102,15 @@ export function useChat(
     threadId: threadId ?? null,
     onUpdateEvent: handleUpdateEvent,
     onThreadId: setThreadId,
+    onError: (error) => {
+      console.error("Stream error:", error);
+    },
+    onConnect: () => {
+      console.log("Stream connected");
+    },
+    onDisconnect: () => {
+      console.log("Stream disconnected");
+    },
     defaultHeaders: {
       "x-auth-scheme": "langsmith",
     },

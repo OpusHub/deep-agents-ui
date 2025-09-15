@@ -27,6 +27,16 @@ function HomePageContent() {
     setSidebarCollapsed((prev) => !prev);
   }, []);
 
+  const handleTodosUpdate = useCallback((newTodos: TodoItem[]) => {
+    console.log("Page: Updating todos", newTodos);
+    setTodos(newTodos);
+  }, []);
+
+  const handleFilesUpdate = useCallback((newFiles: Record<string, string>) => {
+    console.log("Page: Updating files", Object.keys(newFiles));
+    setFiles(newFiles);
+  }, []);
+
   // When the threadId changes, grab the thread state from the graph server
   useEffect(() => {
     const fetchThreadState = async () => {
@@ -51,8 +61,31 @@ function HomePageContent() {
         }
       } catch (error) {
         console.error("Failed to fetch thread state:", error);
-        setTodos([]);
-        setFiles({});
+        // Fallback to localStorage
+        try {
+          const savedTodos = localStorage.getItem(`thread_${threadId}_todos`);
+          const savedFiles = localStorage.getItem(`thread_${threadId}_files`);
+
+          if (savedTodos) {
+            const parsedTodos = JSON.parse(savedTodos);
+            console.log("Loading todos from localStorage fallback:", parsedTodos);
+            setTodos(parsedTodos);
+          } else {
+            setTodos([]);
+          }
+
+          if (savedFiles) {
+            const parsedFiles = JSON.parse(savedFiles);
+            console.log("Loading files from localStorage fallback:", Object.keys(parsedFiles));
+            setFiles(parsedFiles);
+          } else {
+            setFiles({});
+          }
+        } catch (fallbackError) {
+          console.error("Failed to load from localStorage fallback:", fallbackError);
+          setTodos([]);
+          setFiles({});
+        }
       } finally {
         setIsLoadingThreadState(false);
       }
@@ -82,8 +115,8 @@ function HomePageContent() {
           selectedSubAgent={selectedSubAgent}
           setThreadId={setThreadId}
           onSelectSubAgent={setSelectedSubAgent}
-          onTodosUpdate={setTodos}
-          onFilesUpdate={setFiles}
+          onTodosUpdate={handleTodosUpdate}
+          onFilesUpdate={handleFilesUpdate}
           onNewThread={handleNewThread}
           isLoadingThreadState={isLoadingThreadState}
         />
