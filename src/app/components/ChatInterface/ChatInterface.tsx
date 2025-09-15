@@ -197,7 +197,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
               disabled={!hasMessages}
             >
               <SquarePlus size={20} />
-              Nova Conversa
+             
             </Button>
             <Button variant="ghost" size="icon" onClick={toggleThreadHistory}>
               <History size={20} />
