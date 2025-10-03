@@ -49,7 +49,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
     const [isThreadHistoryOpen, setIsThreadHistoryOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const { messages, isLoading, sendMessage, stopStream, loadThread } = useChat(
+    const { messages, isLoading, sendMessage, stopStream, loadThread, clearMessages } = useChat(
       threadId,
       setThreadId,
       onTodosUpdate,
@@ -202,10 +202,9 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
               variant="ghost"
               size="icon"
               onClick={handleNewThread}
-              disabled={!hasMessages}
             >
               <SquarePlus size={20} />
-             
+
             </Button>
             <Button variant="ghost" size="icon" onClick={toggleThreadHistory}>
               <History size={20} />

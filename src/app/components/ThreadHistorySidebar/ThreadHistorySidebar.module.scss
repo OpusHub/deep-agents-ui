@@ -2,9 +2,9 @@
 
 .overlay {
   position: fixed;
-  top: 0;
+  top: 60px;
   right: 0;
-  height: 100vh;
+  height: calc(100vh - 60px);
   width: 20vw;
   z-index: 50;
   animation: slideIn 300ms ease-out;

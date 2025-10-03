@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Message } from "@langchain/langgraph-sdk";
 import { getDeployment } from "@/lib/environment/deployments";
 import { v4 as uuidv4 } from "uuid";
@@ -27,6 +27,14 @@ export function useChatNoStreaming(
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Limpa mensagens quando threadId é null (nova thread)
+  useEffect(() => {
+    if (!threadId) {
+      setMessages([]);
+      setError(null);
+    }
+  }, [threadId]);
 
   const agentId = useMemo(() => {
     if (!deployment?.agentId) {
@@ -59,31 +67,54 @@ export function useChatNoStreaming(
       try {
         console.log("Sending message without streaming...", { threadId, content });
 
-        // Requisição para o servidor (SEM STREAMING)
-        const response = await client.runs.create(
-          threadId,
-          agentId,
-          {
-            input: {
-              messages: [humanMessage],
-            },
-            config: {
-              recursion_limit: 100,
-            },
-            streamMode: "values", // "values" para resposta completa
-          }
-        );
+        let finalThreadId: string;
+        let threadState: any;
 
-        console.log("Run created:", response);
+        if (!threadId) {
+          // Nova thread: usa wait() que aceita null e retorna direto o state
+          console.log("Creating new thread with wait()...");
+          const stateValues = await client.runs.wait(
+            null,
+            agentId,
+            {
+              input: {
+                messages: [humanMessage],
+              },
+              config: {
+                recursion_limit: 100,
+              },
+            }
+          );
 
-        // Aguarda conclusão do run
-        console.log("Waiting for run to complete...");
-        await client.runs.join(response.thread_id, response.run_id);
+          // wait() retorna só os values, precisamos buscar o threadId
+          // Vamos fazer uma busca de threads recentes para pegar o ID
+          const threads = await client.threads.search({ limit: 1 });
+          finalThreadId = threads[0]?.thread_id || "";
+          threadState = { values: stateValues };
+          console.log("New thread created:", finalThreadId);
+        } else {
+          // Thread existente: usa create() + join()
+          console.log("Using existing thread...");
+          const response = await client.runs.create(
+            threadId,
+            agentId,
+            {
+              input: {
+                messages: [humanMessage],
+              },
+              config: {
+                recursion_limit: 100,
+              },
+            }
+          );
 
-        console.log("Run completed, fetching thread state...");
+          console.log("Run created:", response);
+          await client.runs.join(threadId, response.run_id);
+          console.log("Run completed, fetching thread state...");
 
-        // Busca o estado final da thread
-        const threadState = await client.threads.getState(response.thread_id);
+          threadState = await client.threads.getState(threadId);
+          finalThreadId = threadId;
+        }
 
         console.log("Thread state received:", threadState);
 
@@ -103,8 +134,8 @@ export function useChatNoStreaming(
         }
 
         // Atualiza threadId se for nova thread
-        if (!threadId && response.thread_id) {
-          setThreadId(response.thread_id);
+        if (!threadId && finalThreadId) {
+          setThreadId(finalThreadId);
         }
       } catch (err: any) {
         const errorMessage = err.message || "Erro ao enviar mensagem";
@@ -161,6 +192,11 @@ export function useChatNoStreaming(
     console.log("Stop stream called (no-op for non-streaming mode)");
   }, []);
 
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    setError(null);
+  }, []);
+
   return {
     messages,
     isLoading,
@@ -168,5 +204,6 @@ export function useChatNoStreaming(
     sendMessage,
     loadThread,
     stopStream,
+    clearMessages,
   };
 }
