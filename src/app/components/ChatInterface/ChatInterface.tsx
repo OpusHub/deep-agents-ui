@@ -14,7 +14,8 @@ import { Send, Bot, LoaderCircle, SquarePen, History, X, SquarePlus } from "luci
 import { ChatMessage } from "../ChatMessage/ChatMessage";
 import { ThreadHistorySidebar } from "../ThreadHistorySidebar/ThreadHistorySidebar";
 import type { SubAgent, TodoItem, ToolCall } from "../../types/types";
-import { useChat } from "../../hooks/useChat";
+// import { useChat } from "../../hooks/useChat";
+import { useChatNoStreaming as useChat } from "../../hooks/useChatNoStreaming";
 import styles from "./ChatInterface.module.scss";
 import { Message } from "@langchain/langgraph-sdk";
 import { extractStringFromMessageContent } from "../../utils/utils";
@@ -48,12 +49,19 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
     const [isThreadHistoryOpen, setIsThreadHistoryOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const { messages, isLoading, sendMessage, stopStream } = useChat(
+    const { messages, isLoading, sendMessage, stopStream, loadThread } = useChat(
       threadId,
       setThreadId,
       onTodosUpdate,
       onFilesUpdate,
     );
+
+    // Carrega thread quando threadId muda (para modo sem streaming)
+    useEffect(() => {
+      if (threadId && loadThread) {
+        loadThread(threadId);
+      }
+    }, [threadId]);
 
     useEffect(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
